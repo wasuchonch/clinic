@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการ | Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple:#4527a0; --purple-lt:#ede7f6; --purple-md:#5e35b1;
+    --blue:#1565C0; --blue-lt:#e3f2fd;
+    --green:#2e7d32; --green-lt:#e8f5e9;
+    --red:#c62828; --red-lt:#ffebee;
+    --pink:#e91e63; --pink-lt:#fce4ec;
+    --border:#e0e0e0; --text:#212121; --muted:#757575; --bg:#f8f9fa;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Sarabun',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+  .header {
+    background:var(--purple); color:#fff; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+  }
+  .header h1 { font-size:1.25rem; font-weight:800; }
+  .nav-links  { display:flex; gap:12px; }
+  .nav-link {
+    color:rgba(255,255,255,.8); text-decoration:none;
+    font-size:.85rem; font-weight:600; padding:4px 10px; border-radius:20px; transition:.15s;
+  }
+  .nav-link:hover { background:rgba(255,255,255,.15); color:#fff; }
+
+  .tabs { background:#fff; border-bottom:1px solid var(--border); display:flex; padding:0 24px; }
+  .tab-btn {
+    padding:14px 20px; border:none; background:none; cursor:pointer;
+    font-family:'Sarabun',sans-serif; font-size:1rem; font-weight:600;
+    color:var(--muted); border-bottom:3px solid transparent; transition:.15s;
+  }
+  .tab-btn.active { color:var(--purple); border-bottom-color:var(--purple); }
+  .tab-panel { display:none; padding:20px 24px; }
+  .tab-panel.active { display:block; }
+
+  /* ── APPT TAB ── */
+  .appt-layout { display:grid; grid-template-columns:400px 1fr; gap:20px; }
+  .form-card {
+    background:#fff; border-radius:16px; padding:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08); height:fit-content;
+    position:sticky; top:0;
+  }
+  .card-title { font-size:1rem; font-weight:800; margin-bottom:16px; color:var(--purple); }
+
+  .form-group { margin-bottom:14px; }
+  .form-label { display:block; font-size:.82rem; font-weight:700; color:var(--muted); margin-bottom:4px; }
+  .form-input {
+    width:100%; padding:10px 12px; border:2px solid var(--border);
+    border-radius:10px; font-family:'Sarabun',sans-serif; font-size:.95rem;
+    color:var(--text); transition:.15s;
+  }
+  .form-input:focus { outline:none; border-color:var(--purple); }
+
+  /* ── GENDER RADIO ── */
+  .gender-row { display:flex; gap:8px; margin-top:4px; }
+  .gender-btn {
+    flex:1; padding:10px 8px; border:2px solid var(--border); border-radius:10px;
+    background:#fff; cursor:pointer; font-family:'Sarabun',sans-serif;
+    font-size:.9rem; font-weight:700; color:var(--muted); transition:.12s; text-align:center;
+  }
+  .gender-btn:hover  { border-color:var(--purple); color:var(--purple); }
+  .gender-btn.sel-m  { background:var(--blue-lt); border-color:var(--blue); color:var(--blue); }
+  .gender-btn.sel-f  { background:var(--pink-lt); border-color:var(--pink); color:var(--pink); }
+  .gender-btn.sel-o  { background:var(--purple-lt); border-color:var(--purple); color:var(--purple); }
+
+  /* ── TIME 24h SELECTS ── */
+  .time-select-row { display:flex; align-items:center; gap:6px; margin-top:4px; }
+  .time-select-row select {
+    padding:10px 8px; border:2px solid var(--border); border-radius:10px;
+    font-family:'Sarabun',sans-serif; font-size:.95rem; color:var(--text);
+    cursor:pointer; transition:.15s; background:#fff;
+  }
+  .time-select-row select:focus { outline:none; border-color:var(--purple); }
+  .time-colon { font-size:1.3rem; font-weight:800; color:var(--muted); }
+
+  .time-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px; }
+  .time-btn {
+    padding:8px 4px; border:2px solid var(--border);
+    border-radius:8px; background:#fff; cursor:pointer;
+    font-family:'Sarabun',sans-serif; font-size:.82rem; font-weight:600;
+    color:var(--muted); transition:.12s; text-align:center;
+  }
+  .time-btn:hover    { border-color:var(--purple); color:var(--purple); }
+  .time-btn.selected { background:var(--purple); border-color:var(--purple); color:#fff; }
+  .time-btn.taken    { opacity:.4; cursor:not-allowed; background:#f5f5f5; }
+
+  .btn-submit {
+    width:100%; padding:13px; border:none; border-radius:12px;
+    background:var(--purple); color:#fff;
+    font-family:'Sarabun',sans-serif; font-size:1rem; font-weight:700;
+    cursor:pointer; transition:.15s; box-shadow:0 3px 10px rgba(69,39,160,.3); margin-top:4px;
+  }
+  .btn-submit:hover   { background:var(--purple-md); }
+  .btn-submit:disabled{ opacity:.5; cursor:not-allowed; }
+
+  /* ── APPT LIST ── */
+  .appt-list-card { background:#fff; border-radius:16px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .list-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:12px; }
+  .date-nav { display:flex; align-items:center; gap:10px; }
+  .date-nav-btn {
+    background:var(--purple-lt); color:var(--purple);
+    border:none; border-radius:8px; padding:8px 14px;
+    font-size:1rem; cursor:pointer; font-weight:700; transition:.15s;
+  }
+  .date-nav-btn:hover { background:var(--purple); color:#fff; }
+  .date-display { font-size:1.05rem; font-weight:700; min-width:150px; text-align:center; }
+  .count-badge { background:var(--purple-lt); color:var(--purple); padding:4px 12px; border-radius:20px; font-size:.82rem; font-weight:700; }
+
+  .appt-card {
+    border:2px solid var(--border); border-radius:12px; padding:14px 16px;
+    margin-bottom:10px; display:flex; align-items:center; gap:14px; position:relative; transition:.15s;
+  }
+  .appt-card:hover { border-color:#c5cae9; }
+  .appt-card.status-arrived { background:var(--blue-lt); border-color:#90caf9; }
+  .appt-card.status-absent  { background:#fafafa; opacity:.6; }
+  .appt-time-badge {
+    background:var(--purple-lt); color:var(--purple);
+    border-radius:10px; padding:10px 14px; font-size:1.1rem; font-weight:800;
+    min-width:72px; text-align:center;
+  }
+  .appt-card.status-arrived .appt-time-badge { background:var(--blue-lt); color:var(--blue); }
+  .appt-info .aname { font-size:1rem; font-weight:700; }
+  .appt-info .aproc { font-size:.85rem; color:var(--muted); margin-top:2px; }
+  .appt-info .aqnum { font-size:.82rem; color:var(--blue); font-weight:700; }
+  .gender-chip {
+    font-size:.75rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-top:3px; display:inline-block;
+  }
+  .gc-m { background:var(--blue-lt); color:var(--blue); }
+  .gc-f { background:var(--pink-lt); color:var(--pink); }
+  .gc-o { background:var(--purple-lt); color:var(--purple); }
+
+  .appt-actions { margin-left:auto; display:flex; gap:6px; flex-shrink:0; }
+  .action-pill {
+    padding:6px 12px; border:none; border-radius:20px; cursor:pointer;
+    font-family:'Sarabun',sans-serif; font-size:.8rem; font-weight:700; transition:.12s;
+  }
+  .pill-absent   { background:var(--red-lt); color:var(--red); }
+  .pill-absent:hover   { background:var(--red); color:#fff; }
+  .pill-schedule { background:var(--green-lt); color:var(--green); }
+  .pill-schedule:hover { background:var(--green); color:#fff; }
+  .pill-delete   { background:#f5f5f5; color:#9e9e9e; }
+  .pill-delete:hover   { background:#f44336; color:#fff; }
+  .status-chip {
+    position:absolute; right:10px; top:10px;
+    font-size:.72rem; font-weight:700; padding:3px 8px; border-radius:20px;
+  }
+  .chip-scheduled { background:var(--purple-lt); color:var(--purple); }
+  .chip-arrived   { background:var(--blue-lt); color:var(--blue); }
+  .chip-absent    { background:var(--red-lt); color:var(--red); }
+  .empty-appt { text-align:center; color:var(--muted); padding:48px 0; }
+
+  /* ── HISTORY TAB ── */
+  .history-search {
+    background:#fff; border-radius:16px; padding:18px 20px;
+    margin-bottom:14px; box-shadow:0 2px 8px rgba(0,0,0,.08);
+    display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;
+  }
+  .history-search .form-group { margin-bottom:0; flex:1; min-width:140px; }
+  .btn-search {
+    padding:10px 22px; border:none; border-radius:10px;
+    background:var(--purple); color:#fff;
+    font-family:'Sarabun',sans-serif; font-size:.95rem; font-weight:700; cursor:pointer;
+  }
+  .btn-today {
+    padding:10px 14px; border:2px solid var(--border); border-radius:10px;
+    background:#fff; color:var(--muted);
+    font-family:'Sarabun',sans-serif; font-size:.9rem; font-weight:700; cursor:pointer;
+  }
+
+  /* ── HISTORY FILTER ── */
+  .hist-filter {
+    background:#fff; border-radius:16px; padding:14px 20px;
+    margin-bottom:14px; box-shadow:0 2px 8px rgba(0,0,0,.08);
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .hist-filter label { font-size:.82rem; font-weight:700; color:var(--muted); white-space:nowrap; }
+  .hist-filter select, .hist-filter input[type=text] {
+    padding:8px 12px; border:2px solid var(--border); border-radius:8px;
+    font-family:'Sarabun',sans-serif; font-size:.9rem; color:var(--text);
+    min-width:130px; transition:.15s;
+  }
+  .hist-filter select:focus, .hist-filter input:focus { outline:none; border-color:var(--purple); }
+  .filter-result-count { margin-left:auto; font-size:.85rem; color:var(--muted); font-weight:600; }
+  .btn-clear-filter {
+    padding:7px 14px; border:2px solid var(--border); border-radius:8px;
+    background:#fff; color:var(--muted); font-family:'Sarabun',sans-serif;
+    font-size:.85rem; font-weight:700; cursor:pointer;
+  }
+  .btn-clear-filter:hover { background:var(--purple-lt); color:var(--purple); border-color:var(--purple); }
+
+  .history-card { background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,.08); overflow:hidden; }
+  .history-summary {
+    padding:16px 20px; background:var(--purple-lt);
+    display:flex; gap:24px; flex-wrap:wrap; align-items:center;
+  }
+  .sum-item .num { font-size:1.8rem; font-weight:800; color:var(--purple); }
+  .sum-item .lbl { font-size:.78rem; color:var(--muted); font-weight:600; }
+  .sum-gender { display:flex; gap:12px; margin-left:auto; }
+  .sum-gender-item { text-align:center; }
+  .sum-gender-item .g-num { font-size:1.3rem; font-weight:800; }
+  .sum-gender-item .g-lbl { font-size:.75rem; color:var(--muted); }
+
+  .history-table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  .history-table th {
+    background:#f5f5f5; padding:10px 12px; text-align:left;
+    font-size:.78rem; font-weight:700; color:var(--muted); letter-spacing:.5px;
+    border-bottom:1px solid var(--border); position:sticky; top:0;
+  }
+  .history-table td { padding:9px 12px; border-bottom:1px solid #f5f5f5; }
+  .history-table tr:hover td { background:#fafafa; }
+  .history-table tr:last-child td { border-bottom:none; }
+  .hist-num { font-weight:800; }
+  .hist-a { color:var(--blue); }
+  .hist-b { color:var(--green); }
+  .hist-status { display:inline-block; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+  .s-done { background:var(--green-lt); color:var(--green); }
+  .s-other{ background:#f5f5f5; color:var(--muted); }
+  .highlight-row { background:#fffde7 !important; }
+  .empty-history { text-align:center; color:var(--muted); padding:48px; }
+  .table-wrap { overflow:auto; max-height:500px; }
+
+  /* TOAST / MODAL */
+  #toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#323232; color:#fff; border-radius:10px;
+    padding:12px 24px; font-size:.9rem; font-weight:600;
+    z-index:999; display:none; max-width:90%;
+  }
+  #toast.show { display:block; animation:toastIn .3s ease; }
+  @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+  #modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    display:none; justify-content:center; align-items:center; z-index:500;
+  }
+  #modal-overlay.show { display:flex; }
+  .modal-box {
+    background:#fff; border-radius:20px; padding:28px 32px;
+    max-width:360px; width:90%; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,.25);
+  }
+  .modal-box h3 { font-size:1.2rem; font-weight:800; margin-bottom:8px; }
+  .modal-box p  { color:var(--muted); margin-bottom:20px; }
+  .modal-btn-row { display:flex; gap:10px; }
+  .mbtn { flex:1; padding:13px; border:none; border-radius:10px; cursor:pointer; font-family:'Sarabun',sans-serif; font-size:.95rem; font-weight:700; }
+  .mbtn-cancel  { background:#f5f5f5; color:var(--muted); }
+  .mbtn-confirm { background:var(--red); color:#fff; }
+
+  @media (max-width:900px) { .appt-layout { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚙️ จัดการระบบคิว</h1>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">รับคิว</a>
+    <a href="display.html" class="nav-link">จอแสดงผล</a>
+    <a href="registration.html" class="nav-link">ลงทะเบียน</a>
+    <a href="doctor.html" class="nav-link">ห้องตรวจ</a>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('appt')">📋 นัดหัตถการ</button>
+  <button class="tab-btn" onclick="switchTab('history')">📊 ประวัติ</button>
+</div>
+
+<!-- ══ TAB: APPOINTMENTS ══ -->
+<div id="tab-appt" class="tab-panel active">
+<div class="appt-layout">
+
+  <!-- FORM -->
+  <div class="form-card">
+    <div class="card-title">➕ เพิ่มรายการนัด</div>
+
+    <div class="form-group">
+      <label class="form-label">วันที่นัด</label>
+      <input type="date" class="form-input" id="appt-date" />
+    </div>
+
+    <!-- เพศ -->
+    <div class="form-group">
+      <label class="form-label">เพศ</label>
+      <div class="gender-row">
+        <button class="gender-btn" id="gb-m" onclick="selectGender('ชาย')">♂ ชาย</button>
+        <button class="gender-btn" id="gb-f" onclick="selectGender('หญิง')">♀ หญิง</button>
+        <button class="gender-btn" id="gb-o" onclick="selectGender('อื่นๆ')">⚧ อื่นๆ</button>
+      </div>
+    </div>
+
+    <!-- เวลา 24h -->
+    <div class="form-group">
+      <label class="form-label">เวลานัด (24 ชั่วโมง)</label>
+      <div class="time-select-row">
+        <select id="appt-hour">
+          <option value="">ชั่วโมง</option>
+        </select>
+        <span class="time-colon">:</span>
+        <select id="appt-min">
+          <option value="00">00</option>
+          <option value="15">15</option>
+          <option value="30">30</option>
+          <option value="45">45</option>
+        </select>
+      </div>
+      <!-- Quick slots -->
+      <div class="time-grid" id="time-grid"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">ชื่อ-นามสกุลผู้ป่วย</label>
+      <input type="text" class="form-input" id="appt-name" placeholder="เช่น นายสมชาย ใจดี" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">หัตถการที่ทำ</label>
+      <input type="text" class="form-input" id="appt-proc" placeholder="เช่น ฉีด triamcinolone, เลเซอร์..." />
+    </div>
+
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
+      จำนวนนัดวันที่เลือก: <strong id="appt-count-txt">0</strong> / 10
+    </div>
+    <button class="btn-submit" id="btn-add-appt" onclick="addAppointment()">บันทึกการนัด</button>
+  </div>
+
+  <!-- LIST -->
+  <div class="appt-list-card">
+    <div class="list-header">
+      <div class="date-nav">
+        <button class="date-nav-btn" onclick="changeViewDate(-1)">◀</button>
+        <div class="date-display" id="view-date-display"></div>
+        <button class="date-nav-btn" onclick="changeViewDate(1)">▶</button>
+      </div>
+      <span class="count-badge" id="appt-count-badge">0 / 10</span>
+    </div>
+    <div id="appt-list-body"><div class="empty-appt">กำลังโหลด...</div></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══ TAB: HISTORY ══ -->
+<div id="tab-history" class="tab-panel">
+
+  <!-- Date search -->
+  <div class="history-search">
+    <div class="form-group">
+      <label class="form-label">วันที่เริ่มต้น</label>
+      <input type="date" class="form-input" id="hist-from" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">วันที่สิ้นสุด</label>
+      <input type="date" class="form-input" id="hist-to" />
+    </div>
+    <button class="btn-today" onclick="setHistoryToday()">วันนี้</button>
+    <button class="btn-search" onclick="loadHistory()">🔍 ค้นหา</button>
+  </div>
+
+  <!-- Filter bar (shows after load) -->
+  <div class="hist-filter" id="hist-filter" style="display:none">
+    <label>เพศ</label>
+    <select id="f-gender" onchange="applyFilter()">
+      <option value="">ทั้งหมด</option>
+      <option value="ชาย">♂ ชาย</option>
+      <option value="หญิง">♀ หญิง</option>
+      <option value="อื่นๆ">⚧ อื่นๆ</option>
+    </select>
+
+    <label>หัตถการ</label>
+    <input type="text" id="f-proc" placeholder="ค้นหา..." oninput="applyFilter()" />
+
+    <label>ประเภท</label>
+    <select id="f-type" onchange="applyFilter()">
+      <option value="">ทั้งหมด</option>
+      <option value="A">Walk-in (A)</option>
+      <option value="B">นัดหัตถการ (B)</option>
+    </select>
+
+    <button class="btn-clear-filter" onclick="clearFilter()">✕ ล้าง</button>
+    <span class="filter-result-count" id="filter-count"></span>
+  </div>
+
+  <!-- Summary + Table -->
+  <div class="history-card">
+    <div class="history-summary" id="hist-summary" style="display:none">
+      <div class="sum-item"><div class="num" id="hs-total">0</div><div class="lbl">ทั้งหมด</div></div>
+      <div class="sum-item"><div class="num" id="hs-a">0</div><div class="lbl">Walk-in A</div></div>
+      <div class="sum-item"><div class="num" id="hs-b">0</div><div class="lbl">นัด B</div></div>
+      <div class="sum-item"><div class="num" id="hs-done">0</div><div class="lbl">เสร็จสิ้น</div></div>
+      <div class="sum-gender">
+        <div class="sum-gender-item"><div class="g-num" id="hs-male" style="color:var(--blue)">0</div><div class="g-lbl">ชาย</div></div>
+        <div class="sum-gender-item"><div class="g-num" id="hs-female" style="color:var(--pink)">0</div><div class="g-lbl">หญิง</div></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="history-table" id="history-table">
+        <thead>
+          <tr>
+            <th>วันที่</th>
+            <th>หมายเลข</th>
+            <th>ประเภท</th>
+            <th>เพศ</th>
+            <th>ชื่อ</th>
+            <th>หัตถการ</th>
+            <th>เวลานัด</th>
+            <th>รับคิว</th>
+            <th>ลงทะเบียน</th>
+            <th>ตรวจเสร็จ</th>
+            <th>สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td colspan="11" class="empty-history">เลือกช่วงวันที่แล้วกด "ค้นหา"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="modal-overlay">
+  <div class="modal-box">
+    <h3 id="modal-title"></h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btn-row">
+      <button class="mbtn mbtn-cancel" onclick="closeModal()">ยกเลิก</button>
+      <button class="mbtn mbtn-confirm" id="modal-ok">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────── CONFIG ────────────────
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_GAS_URL_HERE/exec';
+// ────────────────────────────────────────
+
+const TIME_SLOTS = ['08:00','08:30','09:00','09:30','10:00','10:30',
+                    '11:00','11:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'];
+const MONTHS_TH  = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                    'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+let viewDate     = new Date();
+let selectedGender = '';
+let apptData     = [];
+let historyAll   = [];  // all loaded records
+
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDateTh(s) {
+  if (!s) return '';
+  const [y,m,d] = String(s).split('-');
+  return `${parseInt(d)} ${MONTHS_TH[parseInt(m)]} ${parseInt(y)+543}`;
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  const today = toISO(new Date());
+  document.getElementById('appt-date').value = today;
+  document.getElementById('hist-from').value = today;
+  document.getElementById('hist-to').value   = today;
+
+  // Build 24h hour select
+  const hourSel = document.getElementById('appt-hour');
+  for (let h = 7; h <= 18; h++) {
+    const o = document.createElement('option');
+    o.value = String(h).padStart(2,'0');
+    o.textContent = String(h).padStart(2,'0');
+    hourSel.appendChild(o);
+  }
+
+  buildTimeGrid();
+  loadAppointments();
+
+  document.getElementById('appt-date').addEventListener('change', e => {
+    viewDate = new Date(e.target.value + 'T12:00:00');
+    updateViewDateDisplay();
+    loadAppointments();
+  });
+});
+
+function updateViewDateDisplay() {
+  const ds = toISO(viewDate);
+  document.getElementById('view-date-display').textContent = formatDateTh(ds);
+  document.getElementById('appt-date').value = ds;
+}
+
+function changeViewDate(delta) {
+  viewDate.setDate(viewDate.getDate() + delta);
+  updateViewDateDisplay();
+  loadAppointments();
+}
+
+// ── GENDER ──
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('gb-m').className = 'gender-btn' + (g==='ชาย' ? ' sel-m' : '');
+  document.getElementById('gb-f').className = 'gender-btn' + (g==='หญิง' ? ' sel-f' : '');
+  document.getElementById('gb-o').className = 'gender-btn' + (g==='อื่นๆ' ? ' sel-o' : '');
+}
+
+function genderChip(g) {
+  if (!g) return '';
+  const cls = g==='ชาย' ? 'gc-m' : g==='หญิง' ? 'gc-f' : 'gc-o';
+  const icon = g==='ชาย' ? '♂' : g==='หญิง' ? '♀' : '⚧';
+  return `<span class="gender-chip ${cls}">${icon} ${g}</span>`;
+}
+
+// ── TIME GRID ──
+function buildTimeGrid() {
+  document.getElementById('time-grid').innerHTML = TIME_SLOTS.map(t =>
+    `<button class="time-btn" data-time="${t}" onclick="selectTimeSlot('${t}')">${t}</button>`
+  ).join('');
+}
+
+function selectTimeSlot(t) {
+  const [h, m] = t.split(':');
+  document.getElementById('appt-hour').value = h;
+  document.getElementById('appt-min').value  = m;
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.toggle('selected', b.dataset.time === t));
+}
+
+function updateTimeGridTaken(takenTimes) {
+  document.querySelectorAll('.time-btn').forEach(b => {
+    const taken = takenTimes.includes(b.dataset.time);
+    b.classList.toggle('taken', taken);
+    b.disabled = taken;
+    if (taken) b.classList.remove('selected');
+  });
+}
+
+// ── API ──
+async function apiGet(params) {
+  const url = new URL(GAS_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+  const r = await fetch(url.toString(), { redirect:'follow' });
+  return r.json();
+}
+async function apiPost(data) {
+  const r = await fetch(GAS_URL, { method:'POST', redirect:'follow', body:JSON.stringify(data) });
+  return r.json();
+}
+
+// ── TABS ──
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (name==='appt'&&i===0)||(name==='history'&&i===1)));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ── LOAD APPOINTMENTS ──
+async function loadAppointments() {
+  const ds = toISO(viewDate);
+  updateViewDateDisplay();
+  try {
+    const r = await apiGet({ action:'getAppointments', date:ds });
+    if (!r.success) { toast('โหลดไม่ได้'); return; }
+    apptData = r.appointments;
+    renderApptList(apptData, ds);
+    const cnt = apptData.length;
+    document.getElementById('appt-count-badge').textContent = `${cnt} / 10`;
+    document.getElementById('appt-count-txt').textContent   = cnt;
+    document.getElementById('btn-add-appt').disabled        = cnt >= 10;
+    updateTimeGridTaken(apptData.map(a => a.time));
+  } catch(e) { toast('เกิดข้อผิดพลาด'); }
+}
+
+function renderApptList(list, dateStr) {
+  const el = document.getElementById('appt-list-body');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-appt">ไม่มีรายการนัดวันที่ ${formatDateTh(dateStr)}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(a => `
+    <div class="appt-card status-${a.status}">
+      <span class="status-chip chip-${a.status}">
+        ${a.status==='scheduled' ? 'รอ' : a.status==='arrived' ? '✅ มาแล้ว' : '❌ ไม่มา'}
+      </span>
+      <div class="appt-time-badge">${a.time}</div>
+      <div class="appt-info">
+        <div class="aname">${a.patientName}</div>
+        <div class="aproc">🔬 ${a.procedure}</div>
+        ${a.gender ? genderChip(a.gender) : ''}
+        ${a.queueNum ? `<div class="aqnum">คิว ${a.queueNum}</div>` : ''}
+      </div>
+      <div class="appt-actions">
+        ${a.status==='scheduled' ? `<button class="action-pill pill-absent" onclick="markAbsent('${a.id}')">ไม่มา</button>` : ''}
+        ${a.status==='absent'    ? `<button class="action-pill pill-schedule" onclick="markScheduled('${a.id}')">คืนนัด</button>` : ''}
+        ${a.status==='scheduled' ? `<button class="action-pill pill-delete" onclick="confirmDelete('${a.id}','${a.patientName}')">ลบ</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function addAppointment() {
+  const date   = toISO(viewDate);
+  const hour   = document.getElementById('appt-hour').value;
+  const min    = document.getElementById('appt-min').value;
+  const time   = (hour && min) ? `${hour}:${min}` : '';
+  const name   = document.getElementById('appt-name').value.trim();
+  const proc   = document.getElementById('appt-proc').value.trim();
+  const gender = selectedGender;
+
+  if (!time)   { toast('⚠️ กรุณาเลือกเวลา'); return; }
+  if (!name)   { toast('⚠️ กรุณาใส่ชื่อผู้ป่วย'); return; }
+  if (!proc)   { toast('⚠️ กรุณาระบุหัตถการ'); return; }
+  if (!gender) { toast('⚠️ กรุณาเลือกเพศ'); return; }
+  if (apptData.length >= 10) { toast('❌ นัดครบ 10 คนแล้ว'); return; }
+
+  const btn = document.getElementById('btn-add-appt');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  try {
+    const r = await apiPost({ action:'addAppointment', date, time, patientName:name, procedure:proc, gender });
+    if (r.success) {
+      toast(`✅ บันทึกนัด ${name} เวลา ${time}`);
+      document.getElementById('appt-name').value = '';
+      document.getElementById('appt-proc').value = '';
+      document.getElementById('appt-hour').value = '';
+      document.getElementById('appt-min').value  = '00';
+      selectGender('');
+      document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+      loadAppointments();
+    } else if (r.error==='max_reached') {
+      toast('❌ นัดครบ 10 คนแล้ว');
+    } else toast('เกิดข้อผิดพลาด');
+  } catch(e) { toast('ไม่สามารถเชื่อมต่อได้'); }
+
+  btn.disabled = false; btn.textContent = 'บันทึกการนัด';
+}
+
+async function markAbsent(id)   { const r=await apiPost({action:'markAbsent',apptId:id}); if(r.success){toast('บันทึกว่าไม่มา');loadAppointments();}else toast('ผิดพลาด'); }
+async function markScheduled(id){ const r=await apiPost({action:'markScheduled',apptId:id}); if(r.success){toast('คืนสถานะแล้ว');loadAppointments();}else toast('ผิดพลาด'); }
+
+function confirmDelete(id, name) {
+  openModal(`ลบการนัด "${name}"?`, 'จะถูกลบถาวร ไม่สามารถกู้คืนได้', async () => {
+    const r = await apiPost({action:'deleteAppointment',apptId:id});
+    if(r.success){toast('ลบแล้ว');loadAppointments();}else toast('ผิดพลาด');
+  });
+}
+
+// ── HISTORY ──
+function setHistoryToday() {
+  const today = toISO(new Date());
+  document.getElementById('hist-from').value = today;
+  document.getElementById('hist-to').value   = today;
+}
+
+async function loadHistory() {
+  const from = document.getElementById('hist-from').value;
+  const to   = document.getElementById('hist-to').value;
+  if (!from||!to) { toast('⚠️ เลือกช่วงวันที่'); return; }
+
+  document.getElementById('history-body').innerHTML =
+    '<tr><td colspan="11" class="empty-history">กำลังโหลด...</td></tr>';
+  document.getElementById('hist-summary').style.display = 'none';
+  document.getElementById('hist-filter').style.display  = 'none';
+
+  try {
+    const r = await apiGet({ action:'getHistory', from, to });
+    if (!r.success) { toast('โหลดไม่ได้'); return; }
+    historyAll = r.records;
+    document.getElementById('hist-filter').style.display = 'flex';
+    clearFilter(false);
+    applyFilter();
+  } catch(e) { toast('เกิดข้อผิดพลาด'); }
+}
+
+// ── FILTER ──
+function applyFilter() {
+  const fGender = document.getElementById('f-gender').value;
+  const fProc   = document.getElementById('f-proc').value.trim().toLowerCase();
+  const fType   = document.getElementById('f-type').value;
+
+  let filtered = historyAll.filter(r => {
+    if (fGender && r.gender !== fGender) return false;
+    if (fProc   && !(r.procedure||'').toLowerCase().includes(fProc)) return false;
+    if (fType   && r.type !== fType) return false;
+    return true;
+  });
+
+  document.getElementById('filter-count').textContent =
+    fGender||fProc||fType ? `แสดง ${filtered.length} จาก ${historyAll.length} รายการ` : '';
+
+  renderHistory(filtered);
+}
+
+function clearFilter(rerender = true) {
+  document.getElementById('f-gender').value = '';
+  document.getElementById('f-proc').value   = '';
+  document.getElementById('f-type').value   = '';
+  document.getElementById('filter-count').textContent = '';
+  if (rerender) renderHistory(historyAll);
+}
+
+function renderHistory(records) {
+  const sumEl = document.getElementById('hist-summary');
+  const tbody = document.getElementById('history-body');
+
+  if (!records.length) {
+    sumEl.style.display = 'none';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-history">ไม่พบข้อมูลในช่วงที่เลือก</td></tr>';
+    return;
+  }
+
+  sumEl.style.display = 'flex';
+  document.getElementById('hs-total').textContent  = records.length;
+  document.getElementById('hs-a').textContent      = records.filter(r=>r.type==='A').length;
+  document.getElementById('hs-b').textContent      = records.filter(r=>r.type==='B').length;
+  document.getElementById('hs-done').textContent   = records.filter(r=>r.status==='done').length;
+  document.getElementById('hs-male').textContent   = records.filter(r=>r.gender==='ชาย').length;
+  document.getElementById('hs-female').textContent = records.filter(r=>r.gender==='หญิง').length;
+
+  const sorted = [...records].sort((a,b) => {
+    if (a.date!==b.date) return String(a.date)<String(b.date)?-1:1;
+    return (a.takeTime||'').localeCompare(b.takeTime||'');
+  });
+
+  const fProc = document.getElementById('f-proc').value.trim().toLowerCase();
+
+  tbody.innerHTML = sorted.map(r => {
+    const procTxt = r.procedure || '';
+    const procHl  = fProc && procTxt.toLowerCase().includes(fProc)
+      ? procTxt.replace(new RegExp(fProc,'gi'), m => `<mark>${m}</mark>`)
+      : procTxt;
+    const gc = r.gender==='ชาย'?'gc-m':r.gender==='หญิง'?'gc-f':r.gender?'gc-o':'';
+    return `
+      <tr>
+        <td>${formatDateTh(String(r.date))}</td>
+        <td class="hist-num ${r.type==='A'?'hist-a':'hist-b'}">${r.queueNum}</td>
+        <td>${r.type==='A'?'Walk-in':'นัด'}</td>
+        <td>${r.gender?`<span class="gender-chip ${gc}">${r.gender}</span>`:''}</td>
+        <td>${r.patientName||''}</td>
+        <td>${procHl}</td>
+        <td>${r.apptTime||''}</td>
+        <td>${(r.takeTime||'').slice(0,5)}</td>
+        <td>${(r.regDoneTime||'').slice(0,5)}</td>
+        <td>${(r.docDoneTime||'').slice(0,5)}</td>
+        <td><span class="hist-status ${r.status==='done'?'s-done':'s-other'}">${r.status==='done'?'เสร็จ':r.status}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+// ── TOAST ──
+function toast(msg, ms=2800) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+// ── MODAL ──
+function openModal(title,msg,cb) {
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-msg').textContent=msg;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('modal-ok').onclick=()=>{closeModal();cb&&cb();};
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+</script>
+</body>
+</html>
