@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แสดงผลคิว | Display</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070c1e;
+    --panel: #0d1530;
+    --border: #1e2d5a;
+    --blue: #38bdf8;
+    --gold: #fbbf24;
+    --green: #34d399;
+    --red: #f87171;
+    --text: #e2e8f0;
+    --muted: #64748b;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body {
+    height:100%; background:var(--bg);
+    font-family:'Sarabun',sans-serif; color:var(--text);
+    overflow:hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    padding:12px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .header .clinic-name { font-size:1.6rem; font-weight:800; color:#fff; }
+  .header .clock {
+    text-align:right;
+    font-size:2rem; font-weight:700; color:var(--blue);
+    font-variant-numeric:tabular-nums;
+  }
+  .header .date-txt { font-size:.8rem; color:var(--muted); }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto 1fr;
+    height:calc(100vh - 70px);
+    gap:0;
+  }
+
+  /* ── CALL PANELS ── */
+  .call-panel {
+    padding:24px 32px 20px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-bottom:1px solid var(--border);
+    position:relative; overflow:hidden;
+  }
+  .call-panel::before {
+    content:''; position:absolute; inset:0;
+    opacity:.04; pointer-events:none;
+    background:repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%);
+    background-size:20px 20px;
+  }
+  .call-panel.panel-reg { border-right:1px solid var(--border); }
+
+  .panel-label {
+    font-size:.9rem; font-weight:600; letter-spacing:2px;
+    text-transform:uppercase; margin-bottom:8px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel-label .dot {
+    width:8px; height:8px; border-radius:50%;
+    animation:blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .reg-num {
+    font-size:clamp(5rem,10vw,8rem);
+    font-weight:900; line-height:1; color:var(--blue);
+    text-shadow:0 0 40px rgba(56,189,248,.5);
+    letter-spacing:4px;
+    transition:all .4s ease;
+  }
+  .doc-num {
+    font-size:clamp(5rem,10vw,8rem);
+    font-weight:900; line-height:1; color:var(--gold);
+    text-shadow:0 0 40px rgba(251,191,36,.5);
+    letter-spacing:4px;
+    transition:all .4s ease;
+  }
+  .empty-num { color:var(--muted); }
+
+  .call-sub {
+    font-size:1rem; margin-top:8px; color:var(--muted); font-weight:600;
+  }
+  .call-dest {
+    font-size:1.1rem; font-weight:700; margin-top:4px;
+  }
+  .dest-reg { color:var(--blue); }
+  .dest-doc { color:var(--gold); }
+
+  .pulse-anim { animation:pulse .6s ease; }
+  @keyframes pulse {
+    0%  { transform:scale(1.15); }
+    50% { transform:scale(.95); }
+    100%{ transform:scale(1); }
+  }
+
+  /* ── QUEUE BOARD ── */
+  .queue-board {
+    grid-column:1/-1;
+    padding:12px 24px 8px;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .board-header {
+    display:grid;
+    grid-template-columns:90px 80px 1fr 1fr 1fr;
+    gap:8px; padding:6px 8px;
+    font-size:.75rem; font-weight:700; color:var(--muted);
+    letter-spacing:1px; text-transform:uppercase;
+    border-bottom:1px solid var(--border); margin-bottom:6px;
+  }
+  .board-rows { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+  .board-rows::-webkit-scrollbar { width:4px; }
+  .board-rows::-webkit-scrollbar-track { background:var(--panel); }
+  .board-rows::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .queue-row {
+    display:grid;
+    grid-template-columns:90px 80px 1fr 1fr 1fr;
+    gap:8px; padding:8px;
+    border-radius:8px; font-size:.9rem;
+    transition:background .3s;
+    align-items:center;
+  }
+  .queue-row:hover { background:rgba(255,255,255,.03); }
+  .queue-row .qnum { font-weight:800; font-size:1rem; }
+  .qnum-a { color:var(--blue); }
+  .qnum-b { color:var(--green); }
+
+  .status-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700;
+  }
+  .st-waiting    { background:rgba(100,116,139,.2); color:#94a3b8; }
+  .st-calling_reg{ background:rgba(56,189,248,.15); color:var(--blue); }
+  .st-registered { background:rgba(52,211,153,.15); color:var(--green); }
+  .st-calling_doc{ background:rgba(251,191,36,.15); color:var(--gold); }
+  .st-done       { background:rgba(100,116,139,.1); color:var(--muted); }
+
+  .time-txt { font-size:.8rem; color:var(--muted); }
+
+  /* ── START OVERLAY ── */
+  #start-overlay {
+    position:fixed; inset:0; background:var(--bg);
+    display:flex; flex-direction:column;
+    justify-content:center; align-items:center; gap:24px;
+    z-index:100;
+  }
+  #start-overlay h2 { font-size:2rem; font-weight:800; }
+  #start-overlay p { color:var(--muted); }
+  #start-btn {
+    background:var(--blue); color:#000;
+    border:none; border-radius:14px; padding:16px 48px;
+    font-size:1.2rem; font-weight:700; cursor:pointer;
+    font-family:'Sarabun',sans-serif;
+    box-shadow:0 0 32px rgba(56,189,248,.4);
+    transition:.2s;
+  }
+  #start-btn:hover { transform:scale(1.05); }
+
+  /* ── CONN STATUS ── */
+  .conn-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--muted); display:inline-block;
+    margin-right:6px; transition:background .3s;
+  }
+  .conn-dot.ok  { background:#22c55e; }
+  .conn-dot.err { background:var(--red); }
+</style>
+</head>
+<body>
+
+<!-- START OVERLAY (unlock audio) -->
+<div id="start-overlay">
+  <h2>ระบบแสดงคิว</h2>
+  <p>กดปุ่มเพื่อเริ่มระบบแสดงผลและเสียงประกาศ</p>
+  <button id="start-btn" onclick="startSystem()">▶ เริ่มระบบ</button>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="clinic-name" id="hdr-clinic">คลินิก</div>
+    <div class="date-txt" id="hdr-date"></div>
+  </div>
+  <div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="date-txt" style="text-align:right">
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-txt">กำลังเชื่อมต่อ...</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+  <!-- REG PANEL -->
+  <div class="call-panel panel-reg">
+    <div class="panel-label" style="color:var(--blue)">
+      <span class="dot" style="background:var(--blue)"></span>
+      โต๊ะลงทะเบียน
+    </div>
+    <div class="reg-num empty-num" id="reg-num">—</div>
+    <div class="call-sub">หมายเลขที่กำลังเรียก</div>
+    <div class="call-dest dest-reg" id="reg-dest"></div>
+  </div>
+
+  <!-- DOC PANEL -->
+  <div class="call-panel panel-doc">
+    <div class="panel-label" style="color:var(--gold)">
+      <span class="dot" style="background:var(--gold)"></span>
+      ห้องตรวจ / ห้องหัตถการ
+    </div>
+    <div class="doc-num empty-num" id="doc-num">—</div>
+    <div class="call-sub">หมายเลขที่กำลังเรียก</div>
+    <div class="call-dest dest-doc" id="doc-dest"></div>
+  </div>
+
+  <!-- BOARD -->
+  <div class="queue-board">
+    <div class="board-header">
+      <span>หมายเลข</span>
+      <span>ประเภท</span>
+      <span>สถานะ</span>
+      <span>รับคิวเวลา</span>
+      <span>ชื่อ/หัตถการ</span>
+    </div>
+    <div class="board-rows" id="board-rows">
+      <div style="color:var(--muted);text-align:center;padding:24px">รอการเชื่อมต่อ...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ──────────────── CONFIG ────────────────
+const GAS_URL     = 'https://script.google.com/macros/s/YOUR_GAS_URL_HERE/exec';
+const CLINIC_NAME = 'คลินิก';
+const POLL_MS     = 3500;
+// ────────────────────────────────────────
+
+const THAI_DIGITS = {'0':'ศูนย์','1':'หนึ่ง','2':'สอง','3':'สาม','4':'สี่',
+                     '5':'ห้า','6':'หก','7':'เจ็ด','8':'แปด','9':'เก้า'};
+const STATUS_MAP  = {
+  waiting:'รอลงทะเบียน', calling_reg:'กำลังเรียก ➜ ลงทะเบียน',
+  registered:'รอเข้าห้องตรวจ', calling_doc:'กำลังเรียก ➜ ห้องตรวจ', done:'เสร็จสิ้น'
+};
+
+let lastRegCall = null;
+let lastDocCall = null;
+let initialized = false;
+let pollInterval = null;
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const months = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                  'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('clock').textContent =
+    now.toTimeString().slice(0,8);
+  document.getElementById('hdr-date').textContent =
+    `${now.getDate()} ${months[now.getMonth()+1]} ${now.getFullYear()+543}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── INIT ──
+document.getElementById('hdr-clinic').textContent = CLINIC_NAME;
+
+function startSystem() {
+  // Unlock Web Speech API with user gesture
+  const u = new SpeechSynthesisUtterance('');
+  window.speechSynthesis.speak(u);
+  document.getElementById('start-overlay').style.display = 'none';
+  startPolling();
+}
+
+// ── SPEECH ──
+function speak(queueNum, destination) {
+  const prefix = queueNum[0] === 'A' ? 'เอ' : 'บี';
+  const digits  = queueNum.slice(1).split('').map(d => THAI_DIGITS[d]||d).join(' ');
+  const dest    = destination === 'reg' ? 'ที่โต๊ะลงทะเบียนค่ะ' : 'เข้าห้องตรวจค่ะ';
+  const text    = `ขอเชิญหมายเลข ${prefix} ${digits} ${dest}`;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'th-TH'; u.rate = 0.82; u.pitch = 1.1;
+  window.speechSynthesis.speak(u);
+}
+
+// ── POLL ──
+function startPolling() {
+  poll();
+  pollInterval = setInterval(poll, POLL_MS);
+}
+
+async function poll() {
+  try {
+    const url = new URL(GAS_URL);
+    url.searchParams.set('action', 'getState');
+    const res  = await fetch(url.toString(), { redirect:'follow' });
+    const data = await res.json();
+    if (data.success) {
+      setConn(true);
+      handleState(data);
+    }
+  } catch (e) { setConn(false); }
+}
+
+function setConn(ok) {
+  document.getElementById('conn-dot').className = 'conn-dot ' + (ok ? 'ok' : 'err');
+  document.getElementById('conn-txt').textContent = ok ? 'เชื่อมต่อแล้ว' : 'ขาดการเชื่อมต่อ';
+}
+
+// ── STATE HANDLER ──
+function handleState(state) {
+  const { currentRegCall, currentDocCall, queues } = state;
+
+  // Detect new calls & speak
+  if (!initialized) {
+    lastRegCall = currentRegCall;
+    lastDocCall = currentDocCall;
+    initialized = true;
+  } else {
+    if (currentRegCall && currentRegCall !== lastRegCall) {
+      speak(currentRegCall, 'reg');
+      lastRegCall = currentRegCall;
+      pulseEl('reg-num');
+    }
+    if (currentDocCall && currentDocCall !== lastDocCall) {
+      speak(currentDocCall, 'doc');
+      lastDocCall = currentDocCall;
+      pulseEl('doc-num');
+    }
+  }
+
+  // Update reg panel
+  const regEl = document.getElementById('reg-num');
+  if (currentRegCall) {
+    regEl.textContent = currentRegCall;
+    regEl.className   = 'reg-num';
+    document.getElementById('reg-dest').textContent = 'ขอเชิญที่โต๊ะลงทะเบียน';
+  } else {
+    regEl.textContent = '—';
+    regEl.className   = 'reg-num empty-num';
+    document.getElementById('reg-dest').textContent = '';
+  }
+
+  // Update doc panel
+  const docEl = document.getElementById('doc-num');
+  if (currentDocCall) {
+    docEl.textContent = currentDocCall;
+    docEl.className   = 'doc-num';
+    document.getElementById('doc-dest').textContent = 'ขอเชิญเข้าห้องตรวจ';
+  } else {
+    docEl.textContent = '—';
+    docEl.className   = 'doc-num empty-num';
+    document.getElementById('doc-dest').textContent = '';
+  }
+
+  // Update board
+  renderBoard(queues);
+}
+
+function pulseEl(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('pulse-anim');
+  void el.offsetWidth;
+  el.classList.add('pulse-anim');
+  setTimeout(() => el.classList.remove('pulse-anim'), 700);
+}
+
+function renderBoard(queues) {
+  const activeStatuses = ['waiting','calling_reg','registered','calling_doc'];
+  const sorted = [...queues]
+    .filter(q => activeStatuses.includes(q.status))
+    .sort((a,b) => {
+      const order = ['calling_reg','calling_doc','registered','waiting'];
+      return order.indexOf(a.status) - order.indexOf(b.status);
+    });
+
+  if (!sorted.length) {
+    document.getElementById('board-rows').innerHTML =
+      '<div style="color:var(--muted);text-align:center;padding:24px">ยังไม่มีคิว</div>';
+    return;
+  }
+
+  document.getElementById('board-rows').innerHTML = sorted.map(q => `
+    <div class="queue-row">
+      <span class="qnum ${q.type === 'A' ? 'qnum-a' : 'qnum-b'}">${q.queueNum}</span>
+      <span style="color:var(--muted);font-size:.85rem">${q.type === 'A' ? '🪑 Walk-in' : '📋 นัด'}</span>
+      <span class="status-badge st-${q.status}">${STATUS_MAP[q.status]||q.status}</span>
+      <span class="time-txt">${q.takeTime ? q.takeTime.slice(0,5) : ''}</span>
+      <span style="font-size:.82rem;color:var(--muted)">${q.patientName||''}${q.procedure ? ' · '+q.procedure : ''}</span>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

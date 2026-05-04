@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ห้องตรวจ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal:#00695c; --teal-lt:#e0f2f1; --teal-md:#00897b;
+    --blue:#1565C0; --blue-lt:#e3f2fd;
+    --red:#c62828; --red-lt:#ffebee;
+    --gray:#f5f5f5; --border:#e0e0e0;
+    --text:#212121; --muted:#757575;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Sarabun',sans-serif; background:#f8f9fa; color:var(--text); min-height:100vh; }
+
+  .header {
+    background:var(--teal); color:#fff;
+    padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+  }
+  .header h1 { font-size:1.25rem; font-weight:800; }
+  .nav-links { display:flex; gap:12px; }
+  .nav-link {
+    color:rgba(255,255,255,.8); text-decoration:none;
+    font-size:.85rem; font-weight:600; padding:4px 10px;
+    border-radius:20px; transition:.15s;
+  }
+  .nav-link:hover { background:rgba(255,255,255,.15); color:#fff; }
+  .conn-badge { display:flex; align-items:center; gap:6px; font-size:.8rem; color:rgba(255,255,255,.7); }
+  .conn-dot { width:8px; height:8px; border-radius:50%; background:#f44336; }
+  .conn-dot.ok { background:#4caf50; }
+
+  .layout { display:grid; grid-template-columns:1fr 340px; gap:16px; padding:16px; max-height:calc(100vh - 62px); }
+
+  .current-box {
+    background:#fff; border-radius:16px; padding:24px 28px; margin-bottom:16px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    border-left:5px solid var(--teal);
+  }
+  .current-box .label { font-size:.85rem; font-weight:700; color:var(--teal); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+  .current-num { font-size:4.5rem; font-weight:900; color:var(--teal); line-height:1; letter-spacing:3px; }
+  .current-num.empty { color:#bdbdbd; font-size:3rem; }
+  .current-detail { font-size:.9rem; color:var(--muted); margin-top:6px; line-height:1.6; }
+
+  .action-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .btn {
+    flex:1; min-width:120px; padding:14px 16px;
+    border:none; border-radius:12px; cursor:pointer;
+    font-family:'Sarabun',sans-serif; font-size:.95rem; font-weight:700;
+    transition:.15s; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn:active { transform:scale(.97); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-primary   { background:var(--teal); color:#fff; box-shadow:0 3px 10px rgba(0,105,92,.3); }
+  .btn-secondary { background:var(--teal-lt); color:var(--teal); }
+  .btn-success   { background:var(--blue); color:#fff; box-shadow:0 3px 10px rgba(21,101,192,.3); }
+  .btn-warn      { background:var(--red); color:#fff; }
+
+  .section-title {
+    font-size:.8rem; font-weight:700; color:var(--muted);
+    letter-spacing:1px; text-transform:uppercase;
+    margin-bottom:8px; padding-bottom:6px;
+    border-bottom:1px solid var(--border);
+  }
+  .queue-list { display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:calc(100vh - 430px); }
+  .queue-list::-webkit-scrollbar { width:4px; }
+  .queue-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .q-item {
+    background:#fff; border-radius:10px; padding:12px 14px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
+    cursor:pointer; transition:.12s; border:2px solid transparent;
+  }
+  .q-item:hover { border-color:var(--teal); }
+  .q-num { font-size:1.2rem; font-weight:800; min-width:60px; }
+  .q-num.type-a { color:var(--blue); }
+  .q-num.type-b { color:var(--teal); }
+  .q-info .name { font-size:.9rem; font-weight:600; }
+  .q-info .detail { font-size:.78rem; color:var(--muted); }
+  .q-time { margin-left:auto; font-size:.78rem; color:var(--muted); }
+  .q-call-btn {
+    background:var(--teal-lt); color:var(--teal);
+    border:none; border-radius:8px; padding:6px 12px;
+    font-family:'Sarabun',sans-serif; font-size:.8rem; font-weight:700;
+    cursor:pointer; white-space:nowrap;
+  }
+  .q-call-btn:hover { background:var(--teal); color:#fff; }
+  .empty-state { text-align:center; color:var(--muted); padding:32px 0; font-size:.95rem; }
+
+  /* Sidebar */
+  .sidebar { display:flex; flex-direction:column; gap:12px; overflow:hidden; }
+  .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat-card {
+    background:#fff; border-radius:12px; padding:14px;
+    text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.06);
+  }
+  .stat-card .num { font-size:2rem; font-weight:800; }
+  .stat-card .lbl { font-size:.75rem; color:var(--muted); font-weight:600; }
+  .stat-teal   { color:var(--teal); }
+  .stat-blue   { color:var(--blue); }
+  .stat-gray   { color:#9e9e9e; }
+  .stat-orange { color:#f57c00; }
+
+  .done-panel {
+    background:#fff; border-radius:16px; padding:16px;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
+    flex:1; display:flex; flex-direction:column; overflow:hidden;
+  }
+  .done-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+  .done-item {
+    background:var(--gray); border-radius:8px; padding:10px 12px;
+    display:flex; align-items:center; gap:8px; font-size:.88rem;
+  }
+  .done-item .dnum { font-weight:800; color:var(--muted); min-width:55px; }
+
+  /* Patient detail card */
+  .detail-card {
+    background:linear-gradient(135deg,var(--teal-lt),#fff);
+    border-radius:12px; padding:16px;
+    margin-top:8px; border-left:3px solid var(--teal);
+  }
+  .detail-card .dc-title { font-size:.8rem; font-weight:700; color:var(--teal); margin-bottom:8px; }
+  .detail-card .dc-row { display:flex; gap:8px; margin-bottom:4px; }
+  .detail-card .dc-key { font-size:.82rem; color:var(--muted); min-width:70px; }
+  .detail-card .dc-val { font-size:.88rem; font-weight:600; }
+
+  /* Toast */
+  #toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:#323232; color:#fff; border-radius:10px;
+    padding:12px 24px; font-size:.9rem; font-weight:600;
+    z-index:999; display:none; max-width:90%;
+  }
+  #toast.show { display:block; animation:toastIn .3s ease; }
+  @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+  #modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    display:none; justify-content:center; align-items:center; z-index:500;
+  }
+  #modal-overlay.show { display:flex; }
+  .modal-box {
+    background:#fff; border-radius:20px; padding:28px 32px;
+    max-width:360px; width:90%; text-align:center;
+    box-shadow:0 8px 32px rgba(0,0,0,.25);
+  }
+  .modal-box h3 { font-size:1.2rem; font-weight:800; margin-bottom:8px; }
+  .modal-box p { color:var(--muted); margin-bottom:20px; }
+  .modal-btn-row { display:flex; gap:10px; }
+  .modal-btn-row .btn { flex:1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🩺 ห้องตรวจ / ห้องหัตถการ</h1>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">รับคิว</a>
+    <a href="display.html" class="nav-link">จอแสดงผล</a>
+    <a href="registration.html" class="nav-link">ลงทะเบียน</a>
+    <a href="admin.html" class="nav-link">จัดการ</a>
+  </div>
+  <div class="conn-badge">
+    <div class="conn-dot" id="conn-dot"></div>
+    <span id="conn-txt">กำลังเชื่อมต่อ...</span>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- MAIN -->
+  <div style="overflow-y:auto;">
+
+    <div class="current-box">
+      <div class="label">📢 กำลังเรียกเข้าห้องตรวจ</div>
+      <div class="current-num empty" id="current-num">—</div>
+      <div class="current-detail" id="current-detail"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-primary" id="btn-call-next" onclick="callNext()">
+        📣 เรียกเข้าห้องตรวจ
+      </button>
+      <button class="btn btn-secondary" id="btn-recall" onclick="recall()" disabled>
+        🔁 เรียกซ้ำ
+      </button>
+      <button class="btn btn-success" id="btn-done" onclick="doneDoc()" disabled>
+        ✅ ตรวจเสร็จ
+      </button>
+      <button class="btn btn-warn" id="btn-skip" onclick="skipQueue()" disabled>
+        ⏭ ข้ามคิว
+      </button>
+    </div>
+
+    <div class="section-title">รายการรอเข้าห้องตรวจ (ลงทะเบียนแล้ว)</div>
+    <div class="queue-list" id="registered-list">
+      <div class="empty-state">ยังไม่มีคิว</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="num stat-teal" id="st-registered">0</div>
+        <div class="lbl">รอตรวจ</div>
+      </div>
+      <div class="stat-card">
+        <div class="num stat-blue" id="st-waiting">0</div>
+        <div class="lbl">รอลงทะเบียน</div>
+      </div>
+      <div class="stat-card">
+        <div class="num stat-gray" id="st-total">0</div>
+        <div class="lbl">คิวทั้งหมด</div>
+      </div>
+      <div class="stat-card">
+        <div class="num stat-orange" id="st-done">0</div>
+        <div class="lbl">เสร็จสิ้น</div>
+      </div>
+    </div>
+
+    <div class="done-panel">
+      <div class="section-title">🏁 ตรวจเสร็จแล้ว</div>
+      <div class="done-list" id="done-list">
+        <div class="empty-state" style="padding:16px">ยังไม่มี</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST / MODAL -->
+<div id="toast"></div>
+<div id="modal-overlay">
+  <div class="modal-box">
+    <h3 id="modal-title"></h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btn-row">
+      <button class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-primary" id="modal-confirm-btn">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────── CONFIG ────────────────
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_GAS_URL_HERE/exec';
+const POLL_MS = 3500;
+// ────────────────────────────────────────
+
+const THAI_DIGITS = {'0':'ศูนย์','1':'หนึ่ง','2':'สอง','3':'สาม','4':'สี่',
+                     '5':'ห้า','6':'หก','7':'เจ็ด','8':'แปด','9':'เก้า'};
+
+let currentCallingNum = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  poll();
+  setInterval(poll, POLL_MS);
+});
+
+async function apiGet() {
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action', 'getState');
+  const res = await fetch(url.toString(), { redirect:'follow' });
+  return res.json();
+}
+
+async function apiPost(data) {
+  const res = await fetch(GAS_URL, {
+    method:'POST', redirect:'follow', body:JSON.stringify(data)
+  });
+  return res.json();
+}
+
+async function poll() {
+  try {
+    const data = await apiGet();
+    if (data.success) { setConn(true); handleState(data); }
+  } catch (e) { setConn(false); }
+}
+
+function setConn(ok) {
+  document.getElementById('conn-dot').className = 'conn-dot' + (ok?' ok':'');
+  document.getElementById('conn-txt').textContent = ok ? 'เชื่อมต่อแล้ว' : 'ขาดการเชื่อมต่อ';
+}
+
+function handleState(data) {
+  currentCallingNum = data.currentDocCall;
+
+  const numEl    = document.getElementById('current-num');
+  const detailEl = document.getElementById('current-detail');
+
+  if (currentCallingNum) {
+    numEl.textContent = currentCallingNum;
+    numEl.className   = 'current-num';
+    const q = data.queues.find(q => q.queueNum === currentCallingNum);
+    if (q) {
+      detailEl.innerHTML =
+        (q.patientName ? `👤 ${q.patientName}<br>` : '') +
+        (q.procedure   ? `🔬 ${q.procedure}<br>` : '') +
+        (q.apptTime    ? `🕐 นัดเวลา ${q.apptTime}` : '');
+    } else detailEl.textContent = '';
+  } else {
+    numEl.textContent = '—';
+    numEl.className   = 'current-num empty';
+    detailEl.textContent = '';
+  }
+
+  const hasCalling    = !!currentCallingNum;
+  const hasRegistered = data.queues.some(q => q.status === 'registered');
+  document.getElementById('btn-call-next').disabled = !hasRegistered;
+  document.getElementById('btn-recall').disabled    = !hasCalling;
+  document.getElementById('btn-done').disabled      = !hasCalling;
+  document.getElementById('btn-skip').disabled      = !hasCalling;
+
+  const s = data.stats;
+  document.getElementById('st-registered').textContent = s.registered || 0;
+  document.getElementById('st-waiting').textContent    = s.waiting    || 0;
+  document.getElementById('st-total').textContent      = s.total      || 0;
+  document.getElementById('st-done').textContent       = s.done       || 0;
+
+  const regList = data.queues.filter(q => q.status === 'registered');
+  regList.sort((a,b) => {
+    if (a.type !== b.type) return a.type === 'A' ? -1 : 1;
+    return parseInt(a.queueNum.slice(1)) - parseInt(b.queueNum.slice(1));
+  });
+  renderRegistered(regList);
+
+  const doneList = data.queues.filter(q => q.status === 'done');
+  renderDone(doneList);
+}
+
+function renderRegistered(list) {
+  const el = document.getElementById('registered-list');
+  if (!list.length) { el.innerHTML = '<div class="empty-state">ยังไม่มีคิวรอตรวจ</div>'; return; }
+  el.innerHTML = list.map(q => `
+    <div class="q-item">
+      <span class="q-num type-${q.type.toLowerCase()}">${q.queueNum}</span>
+      <div class="q-info">
+        <div class="name">${q.patientName || (q.type === 'A' ? 'Walk-in' : 'นัดหัตถการ')}</div>
+        <div class="detail">${q.procedure ? q.procedure : ''}${q.apptTime ? ' · นัด '+q.apptTime : ''}</div>
+      </div>
+      <span class="q-time">${q.regDoneTime ? q.regDoneTime.slice(0,5) : ''}</span>
+      <button class="q-call-btn" onclick="callSpecific('${q.queueNum}')">เรียก</button>
+    </div>`).join('');
+}
+
+function renderDone(list) {
+  const el = document.getElementById('done-list');
+  if (!list.length) { el.innerHTML = '<div class="empty-state" style="padding:12px">ยังไม่มี</div>'; return; }
+  el.innerHTML = [...list].reverse().map(q => `
+    <div class="done-item">
+      <span class="dnum">${q.queueNum}</span>
+      <span>${q.patientName || ''}${q.docDoneTime ? ' · '+q.docDoneTime.slice(0,5) : ''}</span>
+    </div>`).join('');
+}
+
+async function callNext() {
+  const r = await apiPost({ action:'callDoc', queueNum:null });
+  if (r.success) {
+    speak(r.queueNum, 'doc');
+    toast(`📣 เรียกคิว ${r.queueNum} เข้าห้องตรวจ`);
+    poll();
+  } else {
+    toast(r.error === 'no_registered' ? 'ไม่มีคิวรอตรวจ' : 'เกิดข้อผิดพลาด');
+  }
+}
+
+async function callSpecific(queueNum) {
+  const r = await apiPost({ action:'callDoc', queueNum });
+  if (r.success) {
+    speak(r.queueNum, 'doc');
+    toast(`📣 เรียกคิว ${r.queueNum} เข้าห้องตรวจ`);
+    poll();
+  } else toast('เกิดข้อผิดพลาด');
+}
+
+function recall() {
+  if (currentCallingNum) {
+    speak(currentCallingNum, 'doc');
+    toast(`🔁 เรียกซ้ำ ${currentCallingNum}`);
+  }
+}
+
+async function doneDoc() {
+  if (!currentCallingNum) return;
+  const r = await apiPost({ action:'doneDoc', queueNum:currentCallingNum });
+  if (r.success) { toast(`✅ ตรวจเสร็จ ${currentCallingNum}`); poll(); }
+  else toast('เกิดข้อผิดพลาด');
+}
+
+function skipQueue() {
+  if (!currentCallingNum) return;
+  openModal('ข้ามคิว ' + currentCallingNum,
+    'คิวนี้จะถูกส่งกลับไปรอ สามารถเรียกใหม่ในภายหลัง',
+    async () => {
+      const r = await apiPost({ action:'skipQueue', queueNum:currentCallingNum });
+      if (r.success) { toast(`⏭ ข้าม ${currentCallingNum} แล้ว`); poll(); }
+      else toast('เกิดข้อผิดพลาด');
+    }
+  );
+}
+
+function speak(queueNum, dest) {
+  const prefix  = queueNum[0] === 'A' ? 'เอ' : 'บี';
+  const digits  = queueNum.slice(1).split('').map(d => THAI_DIGITS[d]||d).join(' ');
+  const destTxt = dest === 'doc' ? 'เข้าห้องตรวจค่ะ' : 'ที่โต๊ะลงทะเบียนค่ะ';
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(`ขอเชิญหมายเลข ${prefix} ${digits} ${destTxt}`);
+  u.lang = 'th-TH'; u.rate = 0.82; u.pitch = 1.1;
+  window.speechSynthesis.speak(u);
+}
+
+function toast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+let modalCallback = null;
+function openModal(title, msg, cb) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent   = msg;
+  modalCallback = cb;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('modal-confirm-btn').onclick = () => { closeModal(); cb && cb(); };
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+</script>
+</body>
+</html>

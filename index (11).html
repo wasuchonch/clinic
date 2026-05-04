@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>รับคิว</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Sarabun',sans-serif;
+    min-height:100vh; background:#f0f4f8;
+    display:flex; flex-direction:column;
+    overflow:hidden; user-select:none;
+  }
+  /* ── Header ── */
+  .header {
+    background:linear-gradient(135deg,#1565C0 0%,#0d47a1 100%);
+    color:#fff; text-align:center; padding:18px 16px 14px;
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
+  }
+  .header h1 { font-size:1.6rem; font-weight:800; letter-spacing:.5px; }
+  .header p  { font-size:.85rem; opacity:.85; margin-top:2px; }
+  /* ── Screens ── */
+  .screen { flex:1; display:none; flex-direction:column; }
+  .screen.active { display:flex; }
+  /* ── Landing ── */
+  #screen-landing {
+    justify-content:center; align-items:center; gap:28px;
+    padding:32px 24px;
+  }
+  .screen-title {
+    font-size:1.25rem; font-weight:700; color:#37474f;
+    text-align:center; margin-bottom:8px;
+  }
+  .btn-queue {
+    width:100%; max-width:440px; border:none; border-radius:20px;
+    padding:32px 24px; cursor:pointer; transition:.15s;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    box-shadow:0 6px 20px rgba(0,0,0,.15);
+    -webkit-user-select:none;
+  }
+  .btn-queue:active { transform:scale(.96); }
+  .btn-queue .icon { font-size:3.5rem; line-height:1; }
+  .btn-queue .label-big { font-size:1.6rem; font-weight:800; color:#fff; }
+  .btn-queue .label-sub { font-size:.9rem; font-weight:400; color:rgba(255,255,255,.85); }
+  .btn-a { background:linear-gradient(135deg,#1976D2,#1565C0); }
+  .btn-b { background:linear-gradient(135deg,#2e7d32,#1b5e20); }
+  /* ── B Select ── */
+  #screen-b {
+    padding:20px 16px; gap:12px; overflow:hidden;
+  }
+  #screen-b .back-btn {
+    display:flex; align-items:center; gap:6px;
+    background:none; border:none; cursor:pointer;
+    color:#1565C0; font-family:'Sarabun',sans-serif;
+    font-size:1rem; font-weight:600; padding:4px 0;
+  }
+  .appt-list {
+    flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px;
+    padding-bottom:16px;
+  }
+  .appt-card {
+    background:#fff; border-radius:14px; padding:18px 20px;
+    display:flex; align-items:center; gap:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer;
+    border:2px solid transparent; transition:.12s;
+  }
+  .appt-card:active { transform:scale(.98); border-color:#1565C0; }
+  .appt-card.arrived { opacity:.5; pointer-events:none; }
+  .appt-card.absent  { opacity:.4; pointer-events:none; }
+  .appt-time {
+    background:#e3f2fd; color:#1565C0;
+    border-radius:10px; padding:8px 14px;
+    font-size:1.1rem; font-weight:700;
+    min-width:70px; text-align:center;
+  }
+  .appt-info .name { font-size:1.15rem; font-weight:700; color:#212121; }
+  .appt-info .proc { font-size:.85rem; color:#666; margin-top:2px; }
+  .appt-badge {
+    margin-left:auto; font-size:.75rem; padding:4px 10px;
+    border-radius:20px; font-weight:600;
+  }
+  .badge-scheduled { background:#e8f5e9; color:#2e7d32; }
+  .badge-arrived   { background:#e3f2fd; color:#1565C0; }
+  .badge-absent    { background:#ffebee; color:#c62828; }
+  .empty-msg { text-align:center; color:#999; padding:48px 0; font-size:1rem; }
+  /* ── Ticket ── */
+  #screen-ticket {
+    justify-content:center; align-items:center;
+    padding:24px 20px; gap:20px;
+  }
+  .ticket-card {
+    background:#fff; border-radius:20px;
+    padding:32px 40px; text-align:center;
+    box-shadow:0 8px 32px rgba(0,0,0,.15);
+    width:100%; max-width:380px;
+  }
+  .ticket-card .tc-clinic { font-size:.9rem; color:#666; font-weight:600; }
+  .ticket-card .tc-type {
+    display:inline-block; margin:10px 0;
+    padding:4px 14px; border-radius:20px;
+    font-size:.85rem; font-weight:700;
+  }
+  .type-a { background:#e3f2fd; color:#1565C0; }
+  .type-b { background:#e8f5e9; color:#2e7d32; }
+  .ticket-card .tc-num {
+    font-size:5rem; font-weight:900; line-height:1;
+    margin:8px 0 12px;
+  }
+  .num-a { color:#1565C0; }
+  .num-b { color:#2e7d32; }
+  .ticket-card .tc-detail { color:#555; font-size:.9rem; margin-bottom:4px; }
+  .ticket-card .tc-note {
+    margin-top:14px; padding:10px; background:#fffde7;
+    border-radius:10px; font-size:.82rem; color:#f57f17;
+  }
+  .ticket-card .tc-name { font-weight:700; color:#212121; font-size:1rem; margin:4px 0; }
+  .btn-print {
+    width:100%; max-width:380px;
+    background:#1565C0; color:#fff; border:none;
+    border-radius:14px; padding:16px;
+    font-size:1.1rem; font-weight:700; cursor:pointer;
+    font-family:'Sarabun',sans-serif;
+    box-shadow:0 4px 12px rgba(21,101,192,.4);
+    transition:.15s;
+  }
+  .btn-print:active { transform:scale(.97); }
+  .countdown-bar {
+    width:100%; max-width:380px;
+    background:#e0e0e0; border-radius:4px; height:6px; overflow:hidden;
+  }
+  .countdown-fill {
+    height:100%; background:#1565C0;
+    border-radius:4px; transition:width 1s linear;
+  }
+  .countdown-txt { font-size:.8rem; color:#888; text-align:center; }
+  /* ── Loading overlay ── */
+  #loading {
+    position:fixed; inset:0; background:rgba(255,255,255,.85);
+    display:none; justify-content:center; align-items:center;
+    z-index:100; flex-direction:column; gap:12px;
+  }
+  #loading.show { display:flex; }
+  .spinner {
+    width:48px; height:48px; border:5px solid #e3f2fd;
+    border-top-color:#1565C0; border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  /* ── Alert ── */
+  #alert-box {
+    position:fixed; top:20px; left:50%; transform:translateX(-50%);
+    background:#212121; color:#fff; border-radius:12px;
+    padding:14px 24px; font-size:.95rem; font-weight:600;
+    z-index:200; display:none; max-width:90%;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
+  }
+  #alert-box.show { display:block; animation:slideIn .3s ease; }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+  /* ── PRINT STYLES ── */
+  @media print {
+    @page { size: 58mm auto; margin: 3mm; }
+    body > *:not(#print-area) { display:none !important; }
+    #print-area { display:block !important; }
+    #print-area * { box-shadow:none !important; }
+  }
+  #print-area {
+    display:none;
+    font-family:'Sarabun',sans-serif;
+    width:52mm; margin:0 auto; padding:0;
+    text-align:center;
+  }
+  #print-area .p-separator { border-top:1px dashed #000; margin:4px 0; }
+  #print-area .p-clinic { font-size:10pt; font-weight:700; }
+  #print-area .p-date { font-size:8pt; color:#333; }
+  #print-area .p-type { font-size:9pt; margin:3px 0; }
+  #print-area .p-num { font-size:48pt; font-weight:900; letter-spacing:2px; line-height:1.1; }
+  #print-area .p-detail { font-size:8pt; margin:2px 0; }
+  #print-area .p-note { font-size:7.5pt; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="hdr-clinic">คลินิก</h1>
+  <p id="hdr-date"></p>
+</div>
+
+<!-- SCREEN: LANDING -->
+<div id="screen-landing" class="screen active">
+  <p class="screen-title">กรุณาเลือกประเภทการใช้บริการ</p>
+
+  <button class="btn-queue btn-a" onclick="takeQueueA()">
+    <div class="icon">🪑</div>
+    <div class="label-big">Walk-in</div>
+    <div class="label-sub">มาตรวจทั่วไป (คิว A)</div>
+  </button>
+
+  <button class="btn-queue btn-b" onclick="openBSelect()">
+    <div class="icon">📋</div>
+    <div class="label-big">นัดหัตถการ</div>
+    <div class="label-sub">มีนัดทำหัตถการ (คิว B)</div>
+  </button>
+</div>
+
+<!-- SCREEN: B APPOINTMENT SELECT -->
+<div id="screen-b" class="screen">
+  <button class="back-btn" onclick="showScreen('landing')">← กลับ</button>
+  <p class="screen-title">เลือกชื่อของท่านจากรายการนัด</p>
+  <div class="appt-list" id="appt-list">
+    <p class="empty-msg">กำลังโหลด...</p>
+  </div>
+</div>
+
+<!-- SCREEN: TICKET -->
+<div id="screen-ticket" class="screen">
+  <div class="ticket-card" id="ticket-card">
+    <!-- filled by JS -->
+  </div>
+  <button class="btn-print" onclick="window.print()">🖨️ ปริ้นบัตรคิว</button>
+  <div class="countdown-bar"><div class="countdown-fill" id="cd-bar" style="width:100%"></div></div>
+  <p class="countdown-txt" id="cd-txt">กลับหน้าหลักใน 15 วินาที</p>
+</div>
+
+<!-- LOADING -->
+<div id="loading"><div class="spinner"></div><span>กรุณารอสักครู่...</span></div>
+
+<!-- ALERT -->
+<div id="alert-box"></div>
+
+<!-- PRINT AREA -->
+<div id="print-area" id="print-area">
+  <div class="p-clinic" id="pr-clinic"></div>
+  <div class="p-date" id="pr-date"></div>
+  <div class="p-separator"></div>
+  <div class="p-type" id="pr-type"></div>
+  <div class="p-num" id="pr-num"></div>
+  <div class="p-separator"></div>
+  <div class="p-detail" id="pr-name"></div>
+  <div class="p-detail" id="pr-proc"></div>
+  <div class="p-detail" id="pr-appttime"></div>
+  <div class="p-detail" id="pr-time"></div>
+  <div class="p-separator"></div>
+  <div class="p-note">กรุณาติดตามหน้าจอแสดงผล</div>
+</div>
+
+<script>
+// ──────────────── CONFIG (แก้ไขตรงนี้) ────────────────
+const GAS_URL     = 'https://script.google.com/macros/s/YOUR_GAS_URL_HERE/exec';
+const CLINIC_NAME = 'คลินิก';         // ชื่อคลินิก
+const PAPER_SIZE  = '58mm';            // '58mm' หรือ '80mm'
+// ──────────────────────────────────────────────────────
+
+let countdownTimer = null;
+let currentTicketData = null;
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hdr-clinic').textContent = CLINIC_NAME;
+  document.getElementById('hdr-date').textContent   = formatThaiDate(new Date());
+  document.getElementById('pr-clinic').textContent  = CLINIC_NAME;
+
+  // Dynamic paper size
+  const style = document.createElement('style');
+  style.textContent = `@media print { @page { size:${PAPER_SIZE} auto; margin:3mm; } }`;
+  document.head.appendChild(style);
+});
+
+// ── SCREENS ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+// ── API ──
+async function apiPost(data) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST', redirect: 'follow', body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+async function apiGet(params = {}) {
+  const url = new URL(GAS_URL);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { redirect: 'follow' });
+  return res.json();
+}
+
+// ── LOADING / ALERT ──
+function loading(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+}
+
+function showAlert(msg, ms = 3000) {
+  const el = document.getElementById('alert-box');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── TAKE A QUEUE ──
+async function takeQueueA() {
+  loading(true);
+  try {
+    const r = await apiPost({ action: 'takeQueue', queueType: 'A' });
+    if (r.success) showTicket(r, null);
+    else showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+  } catch (e) { showAlert('ไม่สามารถเชื่อมต่อระบบได้'); }
+  loading(false);
+}
+
+// ── B SELECT ──
+async function openBSelect() {
+  showScreen('b');
+  const list = document.getElementById('appt-list');
+  list.innerHTML = '<p class="empty-msg">กำลังโหลดรายการนัด...</p>';
+  try {
+    const r = await apiGet({ action: 'getAppointments' });
+    if (!r.success) { list.innerHTML = '<p class="empty-msg">โหลดไม่ได้ กรุณาลองใหม่</p>'; return; }
+    if (!r.appointments.length) {
+      list.innerHTML = '<p class="empty-msg">ไม่มีรายการนัดสำหรับวันนี้</p>';
+      return;
+    }
+    list.innerHTML = r.appointments.map(a => `
+      <div class="appt-card ${a.status}" onclick="checkInB('${a.id}','${a.patientName}')">
+        <div class="appt-time">${a.time}</div>
+        <div class="appt-info">
+          <div class="name">${a.patientName}</div>
+          <div class="proc">${a.procedure}</div>
+        </div>
+        <span class="appt-badge badge-${a.status}">
+          ${a.status === 'scheduled' ? 'รอเช็คอิน' : a.status === 'arrived' ? 'เช็คอินแล้ว' : 'ไม่มา'}
+        </span>
+      </div>`).join('');
+  } catch (e) { list.innerHTML = '<p class="empty-msg">ไม่สามารถเชื่อมต่อระบบได้</p>'; }
+}
+
+async function checkInB(apptId, name) {
+  loading(true);
+  try {
+    const r = await apiPost({ action: 'checkInB', apptId });
+    if (r.success) {
+      showTicket(r, { type: 'B', patientName: r.patientName, procedure: r.procedure, apptTime: r.apptTime });
+    } else if (r.error === 'already_checked_in') {
+      showAlert(`✅ ${name} เช็คอินแล้ว คิวหมายเลข ${r.queueNum}`);
+      loading(false);
+    } else if (r.error === 'marked_absent') {
+      showAlert('❌ ระบบบันทึกว่าไม่มา กรุณาติดต่อเจ้าหน้าที่');
+      loading(false);
+    } else {
+      showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      loading(false);
+    }
+  } catch (e) { showAlert('ไม่สามารถเชื่อมต่อระบบได้'); loading(false); }
+}
+
+// ── SHOW TICKET ──
+function showTicket(data, apptInfo) {
+  loading(false);
+  currentTicketData = { data, apptInfo };
+  const qn    = data.queueNum;
+  const isB   = qn.startsWith('B');
+  const today = formatThaiDate(new Date());
+  const time  = data.takeTime ? data.takeTime.slice(0,5) : '';
+
+  // Screen ticket
+  document.getElementById('ticket-card').innerHTML = `
+    <div class="tc-clinic">${CLINIC_NAME}</div>
+    <span class="tc-type ${isB ? 'type-b' : 'type-a'}">
+      ${isB ? '📋 นัดหัตถการ' : '🪑 Walk-in'}
+    </span>
+    <div class="tc-num ${isB ? 'num-b' : 'num-a'}">${qn}</div>
+    ${apptInfo?.patientName ? `<div class="tc-name">${apptInfo.patientName}</div>` : ''}
+    ${apptInfo?.procedure   ? `<div class="tc-detail">หัตถการ: ${apptInfo.procedure}</div>` : ''}
+    ${apptInfo?.apptTime    ? `<div class="tc-detail">เวลานัด: ${apptInfo.apptTime}</div>` : ''}
+    <div class="tc-detail">รับคิวเวลา: ${time}</div>
+    <div class="tc-detail">${today}</div>
+    <div class="tc-note">กรุณาติดตามหน้าจอแสดงผล</div>`;
+
+  // Print area
+  document.getElementById('pr-date').textContent    = today;
+  document.getElementById('pr-type').textContent    = isB ? 'นัดหัตถการ (คิว B)' : 'Walk-in (คิว A)';
+  document.getElementById('pr-num').textContent     = qn;
+  document.getElementById('pr-name').textContent    = apptInfo?.patientName ? `ชื่อ: ${apptInfo.patientName}` : '';
+  document.getElementById('pr-proc').textContent    = apptInfo?.procedure   ? `หัตถการ: ${apptInfo.procedure}` : '';
+  document.getElementById('pr-appttime').textContent = apptInfo?.apptTime   ? `เวลานัด: ${apptInfo.apptTime}` : '';
+  document.getElementById('pr-time').textContent    = `รับคิวเวลา: ${time}`;
+
+  showScreen('ticket');
+  startCountdown(15);
+
+  // Auto print
+  setTimeout(() => window.print(), 400);
+}
+
+// ── COUNTDOWN ──
+function startCountdown(sec) {
+  clearInterval(countdownTimer);
+  let remaining = sec;
+  const bar = document.getElementById('cd-bar');
+  const txt = document.getElementById('cd-txt');
+  bar.style.width = '100%';
+
+  countdownTimer = setInterval(() => {
+    remaining--;
+    bar.style.width = (remaining / sec * 100) + '%';
+    txt.textContent = `กลับหน้าหลักใน ${remaining} วินาที`;
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      showScreen('landing');
+    }
+  }, 1000);
+}
+
+// ── DATE UTIL ──
+function formatThaiDate(d) {
+  const months = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                  'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${d.getDate()} ${months[d.getMonth()+1]} ${d.getFullYear()+543}`;
+}
+</script>
+</body>
+</html>
